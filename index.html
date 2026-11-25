@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fffaf0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Голосистый двор">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>Голосистый двор</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky farm header, quests + chorus strip, then pens as a wrapping grid of little fenced meadows */
+:root{
+  --sky:#cdeeff; --grass:#8fd15c; --grass-dark:#5c9f37; --wood:#b97a4b; --wood-dark:#7f4f2c;
+  --ink:#2d2417; --muted:#6f6352; --paper:#fffaf0; --coin:#f5b821; --accent:#e8563a; --accent-dark:#b13a22;
+  --good:#3fae4a; --mid:#f0a52b; --bad:#d9463b;
+  --display:"Rubik", system-ui, sans-serif; --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(var(--sky), #e9f7ff 260px, #eaf6dc 260px);color:var(--ink);font-family:var(--body);font-size:15px;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:3px solid var(--wood);padding-block:10px}
+.inner{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:900;font-size:22px;margin:0;flex:1;min-width:0;letter-spacing:-.3px}
+.coins{font-family:var(--display);font-weight:800;font-size:20px;background:var(--coin);border-radius:999px;padding:4px 14px;font-variant-numeric:tabular-nums;box-shadow:0 3px 0 #c48c0c}
+main{padding-block:14px 40px}
+.strip{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
+@media (min-width:720px){.strip{grid-template-columns:1.4fr 1fr}}
+.panel{background:var(--paper);border-radius:16px;padding:12px 14px;border:2px solid #ecdcc0}
+.panel h2{font-family:var(--display);font-size:16px;font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
+.panel h2 small{font-family:var(--body);font-weight:700;color:var(--muted);font-size:12px}
+.quest{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding-block:6px;border-top:1px dashed #e3d3b5}
+.quest:first-of-type{border-top:0}
+.quest .txt{font-weight:700;min-width:0}
+.quest .bar{grid-column:1;height:6px;background:#efe3cc;border-radius:9px;overflow:hidden}
+.quest .bar i{display:block;height:100%;background:var(--good);border-radius:9px}
+.quest .side{grid-row:1 / span 2;grid-column:2;font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);text-align:right}
+.quest.done .txt{text-decoration:line-through;color:var(--muted)}
+button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark);touch-action:manipulation}
+button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--accent-dark)}
+button:disabled{background:#d8cdb9;box-shadow:0 3px 0 #b9ad98;color:#fff;cursor:default}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button.green{background:var(--good);box-shadow:0 3px 0 #2a7a32}
+button.gold{background:var(--coin);color:var(--ink);box-shadow:0 3px 0 #c48c0c}
+button.ghost{background:transparent;color:var(--ink);box-shadow:none;border:2px solid #d9c9aa}
+button.small{padding:6px 10px;font-size:13px;border-radius:10px}
+.chorus{display:flex;flex-direction:column;gap:8px;justify-content:center}
+.chorus button{font-family:var(--display);font-size:20px;padding:14px}
+.chorus p{margin:0;color:var(--muted);font-weight:700;font-size:13px;text-align:center}
+.pens{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pen{background:var(--paper);border-radius:18px;overflow:hidden;border:2px solid #ecdcc0;display:flex;flex-direction:column}
+.meadow{position:relative;height:130px;background:linear-gradient(#bfe8ff 0 38%, var(--grass) 38% 100%);overflow:hidden;cursor:pointer}
+.meadow::after{content:"";position:absolute;left:0;right:0;bottom:16px;height:30px;background:
+  repeating-linear-gradient(90deg, var(--wood) 0 8px, transparent 8px 46px),
+  linear-gradient(transparent 6px, var(--wood) 6px 11px, transparent 11px 19px, var(--wood) 19px 24px, transparent 24px);pointer-events:none;opacity:.9}
+.tuft{position:absolute;bottom:4px;width:16px;height:10px;border-radius:10px 10px 0 0;background:var(--grass-dark);opacity:.6}
+.walker{position:absolute;bottom:26px;left:10%;z-index:2;animation:walk 14s linear infinite;width:64px;text-align:center}
+.hopper{display:inline-block}
+.emo{display:inline-block;font-size:52px;line-height:1;animation:flip 14s step-end infinite}
+.walker.hop .hopper{animation:hop .45s ease-out}
+.pen.happy .walker{animation-duration:10s}.pen.happy .emo{animation-duration:10s}
+.pen.sad .walker{animation-duration:24s}.pen.sad .emo{animation-duration:24s;filter:saturate(.4)}
+@keyframes walk{0%{left:6%}45%{left:62%}50%{left:62%}95%{left:6%}100%{left:6%}}
+@keyframes flip{0%{transform:scaleX(-1)}47.5%{transform:scaleX(1)}97.5%{transform:scaleX(-1)}}
+@keyframes hop{0%{transform:translateY(0)}35%{transform:translateY(-16px) rotate(-6deg)}70%{transform:translateY(0)}85%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+.bubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#fff;border-radius:12px;padding:2px 8px;font-weight:800;font-size:13px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.12);opacity:0;transition:opacity .2s}
+.bubble.show{opacity:1}
+.pending{position:absolute;top:8px;right:8px;z-index:3}
+.voiceme{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;background:rgba(255,250,240,.55)}
+.voiceme button{font-family:var(--display);font-size:17px}
+.penbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.penhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.penhead b{font-family:var(--display);font-size:17px}
+.penhead span{color:var(--muted);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+.mood{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted)}
+.mood .track{flex:1;height:9px;background:#efe3cc;border-radius:9px;overflow:hidden}
+.mood .track i{display:block;height:100%;border-radius:9px;transition:width .3s}
+.mood .lbl{min-width:84px;text-align:right}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{flex:1 1 auto}
+.locked .meadow{cursor:default;filter:grayscale(.3)}
+.locked .emo{filter:brightness(0) opacity(.35);animation:none}
+.locked .walker{animation:none;left:calc(50% - 32px)}
+.more{grid-column:1/-1;text-align:center;color:var(--muted);font-weight:700}
+.overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(45,36,23,.45)}
+.card{background:var(--paper);border-radius:22px;padding:20px;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 0 rgba(0,0,0,.2)}
+.card h2{font-family:var(--display);font-weight:900;font-size:24px;margin:0;text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-weight:700;line-height:1.4}
+.card .bigemo{font-size:72px;line-height:1}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.rec-on{background:var(--bad)!important;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.7}}
+.filebtn{display:inline-block;font-weight:800;color:var(--accent-dark);text-decoration:underline;cursor:pointer}
+.filebtn input{position:absolute;width:1px;height:1px;opacity:0}
+.note{font-size:13px;background:#fff1d6;border-radius:12px;padding:8px 10px;color:var(--ink);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-weight:800;opacity:0;transition:.25s;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.fly{position:fixed;z-index:25;font-family:var(--display);font-weight:900;color:var(--ink);pointer-events:none;animation:fly .9s ease-out forwards;text-shadow:0 2px 0 #fff}
+@keyframes fly{to{transform:translateY(-50px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.walker,.emo{animation:none!important}.walker{left:calc(50% - 32px)}}
+</style>
+
+<header>
+  <div class="inner top">
+    <h1>Голосистый двор</h1>
+    <button class="gold small" id="collectAll">Собрать всё</button>
+    <span class="coins" id="coins">🪙 0</span>
+  </div>
+</header>
+
+<main class="inner">
+  <div class="strip">
+    <section class="panel" id="questsPanel">
+      <h2>Задания на сегодня <small id="questReset"></small></h2>
+      <div id="quests"></div>
+    </section>
+    <section class="panel chorus">
+      <button id="chorusBtn">🎶 Хор!</button>
+      <p id="chorusHint"></p>
+    </section>
+  </div>
+  <div class="pens" id="pens"></div>
+</main>
+
+<div class="overlay" id="rec" hidden>
+  <div class="card" role="dialog" aria-labelledby="recTitle">
+    <div class="bigemo" id="recEmoji">🐔</div>
+    <h2 id="recTitle">Озвучь курицу</h2>
+    <p id="recHint">Нажми «Записать» и покричи за неё. Запись идёт 3 секунды.</p>
+    <div class="note" id="micNote" hidden>Здесь микрофон недоступен. Запиши голосовое на телефоне и выбери файл ниже.</div>
+    <div class="row">
+      <button id="recBtn">● Записать</button>
+      <button class="ghost" id="recPlay" hidden>▶ Послушать</button>
+    </div>
+    <label class="filebtn">или загрузить аудиофайл<input type="file" id="recFile" accept="audio/*"></label>
+    <div class="row">
+      <button class="green" id="recSave" hidden>Сохранить голос</button>
+      <button class="ghost" id="recClose">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const ANIMALS = [
+  {id:'chicken', name:'Курица', acc:'курицу',  emoji:'🐔', cost:0,    rate:1,   every:5, pitch:1.55, feed:5},
+  {id:'goat',    name:'Коза',   acc:'козу',    emoji:'🐐', cost:60,   rate:3,   every:6, pitch:1.25, feed:12},
+  {id:'pig',     name:'Свинья', acc:'свинью',  emoji:'🐖', cost:250,  rate:8,   every:7, pitch:0.95, feed:30},
+  {id:'sheep',   name:'Овца',   acc:'овцу',    emoji:'🐑', cost:700,  rate:20,  every:7, pitch:1.12, feed:70},
+  {id:'cow',     name:'Корова', acc:'корову',  emoji:'🐄', cost:1800, rate:45,  every:8, pitch:0.72, feed:150},
+  {id:'horse',   name:'Лошадь', acc:'лошадь',  emoji:'🐎', cost:4500, rate:110, every:9, pitch:0.85, feed:350},
+];
+const BY = Object.fromEntries(ANIMALS.map(a => [a.id, a]));
+const MAX_CRIES = 30, PET_CD = 15, CHORUS_CD = 30, DECAY = 100/600; // 10 минут от 100 до 0
+const KEY = 'golosistyi-dvor-v1';
+
+/* ---------- state ---------- */
+let S = null;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+if (!S || !S.owned) S = { coins: 20, owned: { chicken: newAnimal() }, day: '', quests: [], counters: {}, last: Date.now(), chorusAt: 0 };
+function newAnimal(){ return { mood: 80, pending: 0, acc: 0, voiced: false, petAt: 0 }; }
+function save(){ S.last = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+const moodMult = m => m >= 70 ? 2 : m >= 30 ? 1 : 0.3;
+const moodInfo = m => m >= 70 ? ['Довольна', 'var(--good)', 'happy'] : m >= 30 ? ['Нормально', 'var(--mid)', ''] : ['Грустит', 'var(--bad)', 'sad'];
+const fmt = n => Math.floor(n).toLocaleString('ru-RU');
+const today = () => new Date().toISOString().slice(0,10);
+const voicedIds = () => Object.keys(S.owned).filter(id => S.owned[id].voiced);
+
+/* ---------- offline progress (до 2 часов) ---------- */
+(function offline(){
+  let sec = Math.min(7200, Math.max(0, (Date.now() - (S.last || Date.now())) / 1000));
+  if (sec < 5) return;
+  let earned = 0;
+  for (const id in S.owned) {
+    const st = S.owned[id], a = BY[id];
+    if (!st.voiced) continue;
+    let t = st.acc + sec;
+    while (t >= a.every) {
+      t -= a.every;
+      st.mood = Math.max(0, st.mood - DECAY * a.every);
+      const cap = a.rate * 2 * MAX_CRIES;
+      const g = Math.round(a.rate * moodMult(st.mood));
+      if (st.pending < cap) { st.pending = Math.min(cap, st.pending + g); earned += g; }
+    }
+    st.acc = t;
+  }
+  if (earned > 0) setTimeout(() => toast(`Пока тебя не было, ферма накричала ${fmt(earned)} 🪙`), 600);
+})();
+
+/* ---------- quests ---------- */
+const raz = n => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'раза' : 'раз';
+const QPOOL = [
+  { key:'feed',     text:n => `Покорми животных ${n} ${raz(n)}`, n:[3,5] },
+  { key:'pet',      text:n => `Погладь животных ${n} ${raz(n)}`, n:[5,8] },
+  { key:'chorus',   text:n => `Спой хором ${n} ${raz(n)}`,       n:[2,3], need: () => voicedIds().length >= 3 },
+  { key:'collect',  text:n => `Собери ${fmt(n)} монет`,       n:[0,0], dyn:true },
+  { key:'record',   text:() => `Перезапиши голос любому животному`, n:[1,1] },
+  { key:'allhappy', text:() => `Сделай всех довольными одновременно`, n:[1,1], need: () => Object.keys(S.owned).length >= 2 },
+];
+function rollQuests(){
+  S.day = today(); S.counters = {};
+  const owned = Object.keys(S.owned).length;
+  const pool = QPOOL.filter(q => !q.need || q.need()).sort(() => Math.random() - .5).slice(0, 3);
+  S.quests = pool.map(q => {
+    let need = q.dyn ? Math.round(40 * Math.pow(2.6, owned - 1) / 10) * 10 : q.n[0] + Math.floor(Math.random() * (q.n[1] - q.n[0] + 1));
+    return { key: q.key, need, reward: Math.round(15 * Math.pow(2.3, owned - 1) / 5) * 5 + 10, claimed: false };
+  });
+  save();
+}
+function bump(key, by = 1){ S.counters[key] = (S.counters[key] || 0) + by; }
+
+/* ---------- audio ---------- */
+let ac = null;
+const buffers = {};
+function ensureAC(){
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function playBuffer(buf, rate, vol = 1, when = 0){
+  if (!ac || !buf) return;
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = buf; s.playbackRate.value = rate; g.gain.value = vol;
+  s.connect(g).connect(ac.destination); s.start(ac.currentTime + when);
+}
+function voiceRate(id){ const m = S.owned[id].mood; return BY[id].pitch * (m >= 70 ? 1.12 : m < 30 ? 0.78 : 1); }
+function playVoice(id, when = 0, vol = 1){ playBuffer(buffers[id], voiceRate(id), vol, when); }
+function ding(f = 880){
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .15);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .17);
+}
+
+/* IndexedDB для голосов */
+function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('golosistyi-dvor', 1); r.onupgradeneeded = () => r.result.createObjectStore('voices'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbPut(k, v){ const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction('voices', 'readwrite'); tx.objectStore('voices').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function idbGet(k){ const db = await idb(); return new Promise((res, rej) => { const r = db.transaction('voices').objectStore('voices').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function decode(blob){
+  ensureAC();
+  const ab = await blob.arrayBuffer();
+  return await new Promise((res, rej) => ac.decodeAudioData(ab, res, rej));
+}
+async function loadVoices(){
+  for (const id of voicedIds()) {
+    try {
+      const blob = await idbGet(id);
+      if (blob) buffers[id] = await decode(blob);
+      else { S.owned[id].voiced = false; }
+    } catch(e) { S.owned[id].voiced = false; }
+  }
+  save(); render();
+}
+
+/* ---------- UI ---------- */
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function fly(el, text){
+  const r = el.getBoundingClientRect(), f = document.createElement('div');
+  f.className = 'fly'; f.textContent = text; f.style.left = (r.left + r.width/2 - 20) + 'px'; f.style.top = (r.top) + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 950);
+}
+
+function render(){
+  const pens = $('pens'); pens.innerHTML = '';
+  const owned = ANIMALS.filter(a => S.owned[a.id]);
+  const locked = ANIMALS.filter(a => !S.owned[a.id]);
+  for (const a of owned) pens.appendChild(penEl(a, false));
+  if (locked[0]) pens.appendChild(penEl(locked[0], true));
+  if (locked.length > 1) { const m = document.createElement('div'); m.className = 'more'; m.textContent = `Впереди ещё животных: ${locked.length - 1}`; pens.appendChild(m); }
+  refresh();
+}
+
+function penEl(a, isLocked){
+  const el = document.createElement('article');
+  el.className = 'pen' + (isLocked ? ' locked' : ''); el.dataset.id = a.id;
+  const delay = -Math.random() * 14;
+  el.innerHTML = `
+    <div class="meadow">
+      ${[8,30,55,78].map(x => `<span class="tuft" style="left:${x}%"></span>`).join('')}
+      <div class="walker" style="animation-delay:${delay}s"><span class="bubble"></span><span class="hopper"><span class="emo" style="animation-delay:${delay}s">${a.emoji}</span></span></div>
+      ${isLocked ? '' : `<button class="gold small pending" hidden></button>`}
+      ${isLocked ? '' : `<div class="voiceme" hidden><button>🎤 Озвучь меня!</button></div>`}
+    </div>
+    <div class="penbody">
+      <div class="penhead"><b>${isLocked ? '???' : a.name}</b><span>${isLocked ? '' : `+${a.rate} 🪙 каждые ${a.every} с`}</span></div>
+      ${isLocked ? `<div class="actions"><button class="buy">Открыть за ${fmt(a.cost)} 🪙</button></div>` : `
+      <div class="mood"><span>Настроение</span><span class="track"><i></i></span><span class="lbl"></span></div>
+      <div class="actions">
+        <button class="green feed">Покормить ${fmt(a.feed)} 🪙</button>
+        <button class="ghost pet">Погладить</button>
+        <button class="ghost revoice" title="Перезаписать голос">🎤</button>
+      </div>`}
+    </div>`;
+  if (isLocked) {
+    el.querySelector('.buy').onclick = () => buy(a);
+  } else {
+    el.querySelector('.meadow').onclick = e => { if (e.target.closest('button')) return; pet(a, el); };
+    el.querySelector('.pet').onclick = () => pet(a, el);
+    el.querySelector('.feed').onclick = () => feed(a, el);
+    el.querySelector('.revoice').onclick = () => openRec(a);
+    el.querySelector('.voiceme button').onclick = () => openRec(a);
+    el.querySelector('.pending').onclick = e => { e.stopPropagation(); collect(a.id, true); };
+  }
+  return el;
+}
+
+function refresh(){
+  $('coins').textContent = '🪙 ' + fmt(S.coins);
+  let anyPending = false;
+  for (const el of document.querySelectorAll('.pen')) {
+    const a = BY[el.dataset.id], st = S.owned[a.id];
+    if (!st) { const b = el.querySelector('.buy'); if (b) b.disabled = S.coins < a.cost; continue; }
+    const [lbl, col, cls] = moodInfo(st.mood);
+    el.classList.toggle('happy', cls === 'happy'); el.classList.toggle('sad', cls === 'sad');
+    const bar = el.querySelector('.track i'); bar.style.width = st.mood + '%'; bar.style.background = col;
+    el.querySelector('.lbl').textContent = st.voiced ? `${lbl} ×${moodMult(st.mood)}` : 'Молчит';
+    el.querySelector('.voiceme').hidden = st.voiced;
+    const p = el.querySelector('.pending'); p.hidden = st.pending <= 0; p.textContent = '🪙 ' + fmt(st.pending);
+    if (st.pending > 0) anyPending = true;
+    el.querySelector('.feed').disabled = S.coins < a.feed || st.mood >= 98;
+    const left = PET_CD - (Date.now() - st.petAt) / 1000;
+    const petBtn = el.querySelector('.pet');
+    petBtn.textContent = left > 0 ? `Погладить ${Math.ceil(left)} с` : 'Погладить';
+    el.querySelector('.revoice').hidden = !st.voiced;
+  }
+  $('collectAll').disabled = !anyPending;
+  // chorus
+  const v = voicedIds().length, cb = $('chorusBtn'), ch = $('chorusHint');
+  const cd = CHORUS_CD - (Date.now() - S.chorusAt) / 1000;
+  if (v < 3) { cb.disabled = true; ch.textContent = `Озвучь 3 животных, чтобы открыть хор (${v}/3)`; }
+  else if (cd > 0) { cb.disabled = true; ch.textContent = `Голоса отдыхают: ${Math.ceil(cd)} с`; }
+  else { cb.disabled = false; ch.textContent = `Все ${v} споют твоими голосами. Настроение +10 каждому`; }
+  renderQuests();
+}
+
+function renderQuests(){
+  if (S.day !== today()) rollQuests();
+  const box = $('quests'); box.innerHTML = '';
+  for (const q of S.quests) {
+    const def = QPOOL.find(d => d.key === q.key);
+    const have = Math.min(q.need, S.counters[q.key] || 0), done = have >= q.need;
+    const row = document.createElement('div'); row.className = 'quest' + (q.claimed ? ' done' : '');
+    const txt = document.createElement('span'); txt.className = 'txt'; txt.textContent = def.text(q.need);
+    const side = document.createElement('span'); side.className = 'side';
+    if (q.claimed) side.textContent = 'Готово ✓';
+    else if (done) { const b = document.createElement('button'); b.className = 'gold small'; b.textContent = `Забрать +${fmt(q.reward)}`; b.onclick = () => { q.claimed = true; S.coins += q.reward; ding(1046); fly(b, '+' + fmt(q.reward)); save(); refresh(); }; side.appendChild(b); }
+    else side.textContent = `${fmt(have)} / ${fmt(q.need)}`;
+    const bar = document.createElement('span'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(have / q.need) * 100}%"></i>`;
+    row.append(txt, side, bar); box.appendChild(row);
+  }
+  const ms = new Date(new Date().setHours(24,0,0,0)) - Date.now();
+  $('questReset').textContent = `новые через ${Math.floor(ms/3600000)} ч ${Math.floor(ms/60000)%60} мин`;
+}
+
+/* ---------- actions ---------- */
+function cry(id, sound){
+  const el = document.querySelector(`.pen[data-id="${id}"]`); if (!el) return;
+  const w = el.querySelector('.walker'), b = el.querySelector('.bubble');
+  w.classList.remove('hop'); void w.offsetWidth; w.classList.add('hop');
+  b.textContent = sound; b.classList.add('show'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('show'), 900);
+}
+function pet(a, el){
+  ensureAC();
+  const st = S.owned[a.id];
+  if (!st.voiced) { openRec(a); return; }
+  playVoice(a.id); cry(a.id, '♥');
+  if ((Date.now() - st.petAt) / 1000 >= PET_CD) { st.petAt = Date.now(); st.mood = Math.min(100, st.mood + 15); bump('pet'); save(); }
+  refresh();
+}
+function feed(a, el){
+  ensureAC();
+  const st = S.owned[a.id];
+  if (S.coins < a.feed) return;
+  S.coins -= a.feed; st.mood = Math.min(100, st.mood + 40); bump('feed');
+  if (st.voiced) playVoice(a.id); cry(a.id, '🌾 ням!'); ding(660);
+  save(); refresh();
+}
+function collect(id, sound){
+  const st = S.owned[id]; if (!st || st.pending <= 0) return 0;
+  const g = st.pending; S.coins += g; bump('collect', g); st.pending = 0;
+  if (sound) { ensureAC(); ding(988); const p = document.querySelector(`.pen[data-id="${id}"] .pending`); if (p) fly(p, '+' + fmt(g)); }
+  return g;
+}
+$('collectAll').onclick = () => {
+  ensureAC(); let sum = 0; for (const id in S.owned) sum += collect(id, false);
+  if (sum) { ding(988); setTimeout(() => ding(1318), 80); fly($('coins'), '+' + fmt(sum)); }
+  save(); refresh();
+};
+function buy(a){
+  if (S.coins < a.cost) return;
+  ensureAC();
+  S.coins -= a.cost; S.owned[a.id] = newAnimal(); ding(784); setTimeout(() => ding(1175), 100);
+  save(); render(); toast(`${a.name} теперь на ферме!`); openRec(a);
+}
+$('chorusBtn').onclick = () => {
+  ensureAC();
+  const ids = voicedIds(); if (ids.length < 3) return;
+  S.chorusAt = Date.now();
+  ids.forEach((id, i) => { playVoice(id, i * 0.12, 0.8); setTimeout(() => cry(id, '♪♫'), i * 120); S.owned[id].mood = Math.min(100, S.owned[id].mood + 10); });
+  bump('chorus'); save(); refresh();
+};
+
+/* ---------- recording ---------- */
+let recAnimal = null, draftBlob = null, draftBuf = null, mediaRec = null, recTimer = null;
+function openRec(a){
+  ensureAC();
+  recAnimal = a; draftBlob = null; draftBuf = null;
+  $('recEmoji').textContent = a.emoji;
+  $('recTitle').textContent = (S.owned[a.id].voiced ? 'Перезаписать голос: ' : 'Озвучь ') + (S.owned[a.id].voiced ? a.name.toLowerCase() : a.acc);
+  $('recPlay').hidden = true; $('recSave').hidden = true;
+  $('recBtn').textContent = '● Записать'; $('recBtn').classList.remove('rec-on');
+  $('rec').hidden = false;
+}
+function closeRec(){ stopRec(); $('rec').hidden = true; recAnimal = null; }
+$('recClose').onclick = closeRec;
+function stopRec(){ clearTimeout(recTimer); if (mediaRec && mediaRec.state === 'recording') mediaRec.stop(); }
+$('recBtn').onclick = async () => {
+  ensureAC();
+  if (mediaRec && mediaRec.state === 'recording') { stopRec(); return; }
+  let stream;
+  try {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('no');
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    $('micNote').hidden = false; $('recBtn').disabled = true; return;
+  }
+  const chunks = [];
+  mediaRec = new MediaRecorder(stream);
+  mediaRec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  mediaRec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    $('recBtn').textContent = '● Записать заново'; $('recBtn').classList.remove('rec-on');
+    await setDraft(new Blob(chunks, { type: mediaRec.mimeType || 'audio/webm' }));
+  };
+  mediaRec.start();
+  $('recBtn').textContent = '■ Стоп'; $('recBtn').classList.add('rec-on');
+  recTimer = setTimeout(stopRec, 3000);
+};
+$('recFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (f.size > 3 * 1024 * 1024) { toast('Файл великоват. Нужна короткая запись, до пары секунд.'); return; }
+  await setDraft(f);
+};
+async function setDraft(blob){
+  try {
+    draftBuf = await decode(blob); draftBlob = blob;
+    $('recPlay').hidden = false; $('recSave').hidden = false;
+    playBuffer(draftBuf, recAnimal.pitch);
+  } catch(e) { toast('Не получилось прочитать звук. Попробуй другой файл.'); }
+}
+$('recPlay').onclick = () => { ensureAC(); if (draftBuf) playBuffer(draftBuf, recAnimal.pitch); };
+$('recSave').onclick = async () => {
+  if (!draftBuf || !recAnimal) return;
+  const a = recAnimal, st = S.owned[a.id], wasVoiced = st.voiced;
+  buffers[a.id] = draftBuf; st.voiced = true;
+  try { await idbPut(a.id, draftBlob); } catch(e) { toast('Голос сохранён только до перезагрузки страницы'); }
+  if (wasVoiced) bump('record');
+  closeRec(); save(); refresh();
+  playVoice(a.id); cry(a.id, '!!!');
+  if (!wasVoiced) toast(`${a.name} заговорила твоим голосом и начала приносить монеты`);
+};
+
+/* ---------- loop ---------- */
+let lastTick = performance.now(), saveAcc = 0;
+setInterval(() => {
+  const now = performance.now(), dt = Math.min(2, (now - lastTick) / 1000); lastTick = now;
+  for (const id in S.owned) {
+    const st = S.owned[id], a = BY[id];
+    if (!st.voiced) continue;
+    st.mood = Math.max(0, st.mood - DECAY * dt);
+    st.acc += dt;
+    if (st.acc >= a.every) {
+      st.acc -= a.every;
+      const cap = a.rate * 2 * MAX_CRIES;
+      if (st.pending < cap) { st.pending = Math.min(cap, st.pending + Math.round(a.rate * moodMult(st.mood))); cry(id, '🪙'); }
+      else cry(id, 'полно!');
+    }
+  }
+  const ids = Object.keys(S.owned);
+  if (ids.length >= 2 && ids.every(id => S.owned[id].voiced && S.owned[id].mood >= 70)) S.counters.allhappy = 1;
+  saveAcc += dt; if (saveAcc > 3) { saveAcc = 0; save(); }
+  refresh();
+}, 250);
+addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+if (S.day !== today() || !S.quests.length) rollQuests();
+render();
+loadVoices();
+})();
+</script>
+
+</body>
+</html>
