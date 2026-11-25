@@ -14,138 +14,109 @@
 <title>Голосистый двор</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
 <style>
-/* Layout: sticky farm header, quests + chorus strip, then pens as a wrapping grid of little fenced meadows */
+/* Layout: full-screen top-down farm canvas; HUD bar on top, quest dropdown, context action panel at the bottom */
 :root{
-  --sky:#cdeeff; --grass:#8fd15c; --grass-dark:#5c9f37; --wood:#b97a4b; --wood-dark:#7f4f2c;
-  --ink:#2d2417; --muted:#6f6352; --paper:#fffaf0; --coin:#f5b821; --accent:#e8563a; --accent-dark:#b13a22;
-  --good:#3fae4a; --mid:#f0a52b; --bad:#d9463b;
+  --ink:#2d2417; --muted:#6f6352; --paper:#fffaf0; --line:#ecdcc0; --coin:#f5b821; --coin-dark:#c48c0c;
+  --accent:#e8563a; --accent-dark:#b13a22; --good:#3fae4a; --good-dark:#2a7a32; --mid:#f0a52b; --bad:#d9463b;
   --display:"Rubik", system-ui, sans-serif; --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
 *{box-sizing:border-box}
-html{background:#eaf6dc}
-body{margin:0;min-height:100vh;background:linear-gradient(var(--sky), #e9f7ff 260px, #eaf6dc 260px) no-repeat, #eaf6dc;color:var(--ink);font-family:var(--body);font-size:15px;-webkit-tap-highlight-color:transparent}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:3px solid var(--wood);padding-block:10px}
-.inner{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-h1{font-family:var(--display);font-weight:900;font-size:22px;margin:0;flex:1;min-width:0;letter-spacing:-.3px}
-.coins{font-family:var(--display);font-weight:800;font-size:20px;background:var(--coin);border-radius:999px;padding:4px 14px;font-variant-numeric:tabular-nums;box-shadow:0 3px 0 #c48c0c}
-main{padding-block:14px 40px}
-.strip{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
-@media (min-width:720px){.strip{grid-template-columns:1.4fr 1fr}}
-.panel{background:var(--paper);border-radius:16px;padding:12px 14px;border:2px solid #ecdcc0}
-.panel h2{font-family:var(--display);font-size:16px;font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
-.panel h2 small{font-family:var(--body);font-weight:700;color:var(--muted);font-size:12px}
+html,body{height:100%}
+body{margin:0;background:#4f8a2f;color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+.hud{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));pointer-events:none;z-index:5}
+.hud > *{pointer-events:auto}
+.group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-family:var(--display);font-weight:800;background:var(--paper);border-radius:999px;padding:6px 14px;box-shadow:0 3px 0 rgba(0,0,0,.2);font-size:16px;white-space:nowrap}
+.chip.coins{background:var(--coin);box-shadow:0 3px 0 var(--coin-dark);font-variant-numeric:tabular-nums;font-size:18px}
+button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:8px 13px;cursor:pointer;background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark);touch-action:manipulation;font-size:14px}
+button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--accent-dark)}
+button:disabled{background:#d8cdb9;box-shadow:0 3px 0 #b9ad98;cursor:default}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button.green{background:var(--good);box-shadow:0 3px 0 var(--good-dark)}
+button.paper{background:var(--paper);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.2)}
+kbd{display:inline-block;font-family:var(--display);font-size:11px;background:rgba(255,255,255,.3);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.paper kbd{background:#efe3cc}
+.quests{position:fixed;top:calc(58px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));width:min(330px,calc(100% - 24px));background:var(--paper);border-radius:16px;padding:12px 14px;box-shadow:0 6px 0 rgba(0,0,0,.18);z-index:6}
+.quests h2{font-family:var(--display);font-size:16px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}
+.quests h2 small{font-family:var(--body);color:var(--muted);font-size:12px}
 .quest{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding-block:6px;border-top:1px dashed #e3d3b5}
 .quest:first-of-type{border-top:0}
-.quest .txt{font-weight:700;min-width:0}
+.quest .txt{font-weight:800;font-size:14px;min-width:0}
 .quest .bar{grid-column:1;height:6px;background:#efe3cc;border-radius:9px;overflow:hidden}
-.quest .bar i{display:block;height:100%;background:var(--good);border-radius:9px}
-.quest .side{grid-row:1 / span 2;grid-column:2;font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);text-align:right}
+.quest .bar i{display:block;height:100%;background:var(--good)}
+.quest .side{grid-row:1 / span 2;grid-column:2;font-weight:800;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .quest.done .txt{text-decoration:line-through;color:var(--muted)}
-button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent-dark);touch-action:manipulation}
-button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--accent-dark)}
-button:disabled{background:#d8cdb9;box-shadow:0 3px 0 #b9ad98;color:#fff;cursor:default}
-button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-button.green{background:var(--good);box-shadow:0 3px 0 #2a7a32}
-button.gold{background:var(--coin);color:var(--ink);box-shadow:0 3px 0 #c48c0c}
-button.ghost{background:transparent;color:var(--ink);box-shadow:none;border:2px solid #d9c9aa}
-button.small{padding:6px 10px;font-size:13px;border-radius:10px}
-.chorus{display:flex;flex-direction:column;gap:8px;justify-content:center}
-.chorus button{font-family:var(--display);font-size:20px;padding:14px}
-.chorus p{margin:0;color:var(--muted);font-weight:700;font-size:13px;text-align:center}
-.pens{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.pen{background:var(--paper);border-radius:18px;overflow:hidden;border:2px solid #ecdcc0;display:flex;flex-direction:column}
-.meadow{position:relative;height:130px;background:linear-gradient(#bfe8ff 0 38%, var(--grass) 38% 100%);overflow:hidden;cursor:pointer}
-.meadow::after{content:"";position:absolute;left:0;right:0;bottom:16px;height:30px;background:
-  repeating-linear-gradient(90deg, var(--wood) 0 8px, transparent 8px 46px),
-  linear-gradient(transparent 6px, var(--wood) 6px 11px, transparent 11px 19px, var(--wood) 19px 24px, transparent 24px);pointer-events:none;opacity:.9}
-.tuft{position:absolute;bottom:4px;width:16px;height:10px;border-radius:10px 10px 0 0;background:var(--grass-dark);opacity:.6}
-.walker{position:absolute;bottom:26px;left:10%;z-index:2;animation:walk 14s linear infinite;width:64px;text-align:center}
-.hopper{display:inline-block}
-.emo{display:inline-block;font-size:52px;line-height:1;animation:flip 14s step-end infinite}
-.walker.hop .hopper{animation:hop .45s ease-out}
-.pen.happy .walker{animation-duration:10s}.pen.happy .emo{animation-duration:10s}
-.pen.sad .walker{animation-duration:24s}.pen.sad .emo{animation-duration:24s;filter:saturate(.4)}
-@keyframes walk{0%{left:6%}45%{left:62%}50%{left:62%}95%{left:6%}100%{left:6%}}
-@keyframes flip{0%{transform:scaleX(-1)}47.5%{transform:scaleX(1)}97.5%{transform:scaleX(-1)}}
-@keyframes hop{0%{transform:translateY(0)}35%{transform:translateY(-16px) rotate(-6deg)}70%{transform:translateY(0)}85%{transform:translateY(-4px)}100%{transform:translateY(0)}}
-.bubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#fff;border-radius:12px;padding:2px 8px;font-weight:800;font-size:13px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.12);opacity:0;transition:opacity .2s}
-.bubble.show{opacity:1}
-.pending{position:absolute;top:8px;right:8px;z-index:3}
-.voiceme{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;background:rgba(255,250,240,.55)}
-.voiceme button{font-family:var(--display);font-size:17px}
-.penbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
-.penhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.penhead b{font-family:var(--display);font-size:17px}
-.penhead span{color:var(--muted);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+.act{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 24px));background:var(--paper);border-radius:18px;padding:12px 14px;box-shadow:0 6px 0 rgba(0,0,0,.2);z-index:5;display:flex;flex-direction:column;gap:8px}
+.act .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.act .head b{font-family:var(--display);font-size:18px}
+.act .head span{color:var(--muted);font-weight:800;font-size:13px}
+.act .btns{display:flex;gap:8px;flex-wrap:wrap}
+.act .btns button{flex:1 1 auto}
 .mood{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted)}
-.mood .track{flex:1;height:9px;background:#efe3cc;border-radius:9px;overflow:hidden}
-.mood .track i{display:block;height:100%;border-radius:9px;transition:width .3s}
-.mood .lbl{min-width:84px;text-align:right}
-.actions{display:flex;gap:6px;flex-wrap:wrap}
-.actions button{flex:1 1 auto}
-.locked .meadow{cursor:default;filter:grayscale(.3)}
-.locked .emo{filter:brightness(0) opacity(.35);animation:none}
-.locked .walker{animation:none;left:calc(50% - 32px)}
-.more{grid-column:1/-1;text-align:center;color:var(--muted);font-weight:700}
+.mood .track{flex:1;height:8px;background:#efe3cc;border-radius:9px;overflow:hidden}
+.mood .track i{display:block;height:100%}
+.hint{position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));background:rgba(45,36,23,.75);color:var(--paper);border-radius:12px;padding:8px 12px;font-weight:800;font-size:13px;z-index:4;max-width:calc(100% - 24px);transition:opacity .4s}
 .overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(45,36,23,.45)}
 .card{background:var(--paper);border-radius:22px;padding:20px;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 0 rgba(0,0,0,.2)}
 .card h2{font-family:var(--display);font-weight:900;font-size:24px;margin:0;text-wrap:balance}
 .card p{margin:0;color:var(--muted);font-weight:700;line-height:1.4}
-.card .bigemo{font-size:72px;line-height:1}
+.bigemo{font-size:72px;line-height:1}
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.row button{font-size:16px;padding:10px 16px}
 .rec-on{background:var(--bad)!important;animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.7}}
 .filebtn{display:inline-block;font-weight:800;color:var(--accent-dark);text-decoration:underline;cursor:pointer}
 .filebtn input{position:absolute;width:1px;height:1px;opacity:0}
-.note{font-size:13px;background:#fff1d6;border-radius:12px;padding:8px 10px;color:var(--ink);font-weight:700}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-weight:800;opacity:0;transition:.25s;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.note{font-size:13px;background:#fff1d6;border-radius:12px;padding:8px 10px;font-weight:700}
+.toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-10px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-weight:800;opacity:0;transition:.25s;z-index:30;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%)}
-.fly{position:fixed;z-index:25;font-family:var(--display);font-weight:900;color:var(--ink);pointer-events:none;animation:fly .9s ease-out forwards;text-shadow:0 2px 0 #fff}
-@keyframes fly{to{transform:translateY(-50px);opacity:0}}
-@media (prefers-reduced-motion:reduce){.walker,.emo{animation:none!important}.walker{left:calc(50% - 32px)}}
+@media (max-width:560px){ .chip.title{display:none} }
 </style>
 
-<header>
-  <div class="inner top">
-    <h1>Голосистый двор</h1>
-    <button class="gold small" id="collectAll">Собрать всё</button>
-    <span class="coins" id="coins">🪙 0</span>
-  </div>
-</header>
+<canvas id="c"></canvas>
 
-<main class="inner">
-  <div class="strip">
-    <section class="panel" id="questsPanel">
-      <h2>Задания на сегодня <small id="questReset"></small></h2>
-      <div id="quests"></div>
-    </section>
-    <section class="panel chorus">
-      <button id="chorusBtn">🎶 Хор!</button>
-      <p id="chorusHint"></p>
-    </section>
+<div class="hud">
+  <div class="group">
+    <span class="chip title">Голосистый двор</span>
+    <span class="chip coins" id="coins">🪙 0</span>
   </div>
-  <div class="pens" id="pens"></div>
-</main>
+  <div class="group">
+    <button id="chorusBtn">🎶 Хор<kbd>Q</kbd></button>
+    <button class="paper" id="questBtn">Задания</button>
+  </div>
+</div>
+
+<section class="quests" id="questsPanel" hidden>
+  <h2>Задания на сегодня <small id="questReset"></small></h2>
+  <div id="quests"></div>
+</section>
+
+<section class="act" id="act" hidden>
+  <div class="head"><b id="actTitle"></b><span id="actSub"></span></div>
+  <div class="mood" id="actMood" hidden><span>Настроение</span><span class="track"><i id="actMoodBar"></i></span><span id="actMoodLbl"></span></div>
+  <div class="btns" id="actBtns"></div>
+</section>
+
+<div class="hint" id="hint">Ходить: WASD, стрелки или клик мышью. Действие: E. Хор: Q.</div>
 
 <div class="overlay" id="rec" hidden>
   <div class="card" role="dialog" aria-labelledby="recTitle">
     <div class="bigemo" id="recEmoji">🐔</div>
     <h2 id="recTitle">Озвучь курицу</h2>
-    <p id="recHint">Нажми «Записать» и покричи за неё. Запись идёт 3 секунды.</p>
-    <div class="note" id="micNote" hidden>Здесь микрофон недоступен. Запиши голосовое на телефоне и выбери файл ниже.</div>
+    <p>Нажми «Записать» и покричи за неё. Запись идёт 3 секунды.</p>
+    <div class="note" id="micNote" hidden>Микрофон недоступен. Разреши доступ в настройках браузера или выбери аудиофайл ниже.</div>
     <div class="row">
       <button id="recBtn">● Записать</button>
-      <button class="ghost" id="recPlay" hidden>▶ Послушать</button>
+      <button class="paper" id="recPlay" hidden>▶ Послушать</button>
     </div>
     <label class="filebtn">или загрузить аудиофайл<input type="file" id="recFile" accept="audio/*"></label>
     <div class="row">
       <button class="green" id="recSave" hidden>Сохранить голос</button>
-      <button class="ghost" id="recClose">Отмена</button>
+      <button class="paper" id="recClose">Отмена</button>
     </div>
   </div>
 </div>
@@ -155,34 +126,49 @@ button.small{padding:6px 10px;font-size:13px;border-radius:10px}
 <script>
 (() => {
 const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+
+/* ---------- data ---------- */
 const ANIMALS = [
-  {id:'chicken', name:'Курица', acc:'курицу',  emoji:'🐔', cost:0,    rate:1,   every:5, pitch:1.55, feed:5},
-  {id:'goat',    name:'Коза',   acc:'козу',    emoji:'🐐', cost:60,   rate:3,   every:6, pitch:1.25, feed:12},
-  {id:'pig',     name:'Свинья', acc:'свинью',  emoji:'🐖', cost:250,  rate:8,   every:7, pitch:0.95, feed:30},
-  {id:'sheep',   name:'Овца',   acc:'овцу',    emoji:'🐑', cost:700,  rate:20,  every:7, pitch:1.12, feed:70},
-  {id:'cow',     name:'Корова', acc:'корову',  emoji:'🐄', cost:1800, rate:45,  every:8, pitch:0.72, feed:150},
-  {id:'horse',   name:'Лошадь', acc:'лошадь',  emoji:'🐎', cost:4500, rate:110, every:9, pitch:0.85, feed:350},
+  {id:'chicken', name:'Курица', acc:'курицу', emoji:'🐔', cost:0,    rate:1,   every:5, pitch:1.55, feed:5,   size:34},
+  {id:'goat',    name:'Коза',   acc:'козу',   emoji:'🐐', cost:60,   rate:3,   every:6, pitch:1.25, feed:12,  size:40},
+  {id:'pig',     name:'Свинья', acc:'свинью', emoji:'🐖', cost:250,  rate:8,   every:7, pitch:0.95, feed:30,  size:42},
+  {id:'sheep',   name:'Овца',   acc:'овцу',   emoji:'🐑', cost:700,  rate:20,  every:7, pitch:1.12, feed:70,  size:42},
+  {id:'cow',     name:'Корова', acc:'корову', emoji:'🐄', cost:1800, rate:45,  every:8, pitch:0.72, feed:150, size:50},
+  {id:'horse',   name:'Лошадь', acc:'лошадь', emoji:'🐎', cost:4500, rate:110, every:9, pitch:0.85, feed:350, size:52},
 ];
 const BY = Object.fromEntries(ANIMALS.map(a => [a.id, a]));
-const MAX_CRIES = 30, PET_CD = 15, CHORUS_CD = 30, DECAY = 100/600; // 10 минут от 100 до 0
+const MAX_CRIES = 30, PET_CD = 15, CHORUS_CD = 30, DECAY = 100/600;
 const KEY = 'golosistyi-dvor-v1';
 
-/* ---------- state ---------- */
+const WORLD = {w:1600, h:1100};
+const PW = 260, PH = 190;
+const PLOTS = [[170,140],[670,140],[1170,140],[170,770],[670,770],[1170,770]].map(([x,y], i) => {
+  const top = i < 3;
+  return { x, y, w:PW, h:PH, top, spot: { x: x + PW/2, y: top ? y + PH + 30 : y - 30 } };
+});
+const STAGE = { x: 800, y: 555, r: 44 };
+STAGE.spot = { x: STAGE.x, y: STAGE.y + 70 };
+const POND = { x: 330, y: 555, rx: 110, ry: 62 };
+const TREES = [[60,70],[1540,80],[60,1040],[1530,1030],[540,560],[1080,520],[1250,600],[1470,470],[1460,640],[110,460],[95,650],[800,1050],[460,1060],[1150,1060],[800,40],[460,50],[1140,45]]
+  .map(([x,y]) => ({x, y, r: 26 + ((x*7+y*3) % 12)}));
+
+/* ---------- state (общий с прошлой версией) ---------- */
 let S = null;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 if (!S || !S.owned) S = { coins: 20, owned: { chicken: newAnimal() }, day: '', quests: [], counters: {}, last: Date.now(), chorusAt: 0 };
 function newAnimal(){ return { mood: 80, pending: 0, acc: 0, voiced: false, petAt: 0 }; }
 function save(){ S.last = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
-
 const moodMult = m => m >= 70 ? 2 : m >= 30 ? 1 : 0.3;
-const moodInfo = m => m >= 70 ? ['Довольна', 'var(--good)', 'happy'] : m >= 30 ? ['Нормально', 'var(--mid)', ''] : ['Грустит', 'var(--bad)', 'sad'];
+const moodInfo = m => m >= 70 ? ['Довольна', '#3fae4a'] : m >= 30 ? ['Нормально', '#f0a52b'] : ['Грустит', '#d9463b'];
 const fmt = n => Math.floor(n).toLocaleString('ru-RU');
 const today = () => new Date().toISOString().slice(0,10);
 const voicedIds = () => Object.keys(S.owned).filter(id => S.owned[id].voiced);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rand = (a,b) => a + Math.random()*(b-a);
 
-/* ---------- offline progress (до 2 часов) ---------- */
 (function offline(){
-  let sec = Math.min(7200, Math.max(0, (Date.now() - (S.last || Date.now())) / 1000));
+  const sec = Math.min(7200, Math.max(0, (Date.now() - (S.last || Date.now())) / 1000));
   if (sec < 5) return;
   let earned = 0;
   for (const id in S.owned) {
@@ -192,13 +178,12 @@ const voicedIds = () => Object.keys(S.owned).filter(id => S.owned[id].voiced);
     while (t >= a.every) {
       t -= a.every;
       st.mood = Math.max(0, st.mood - DECAY * a.every);
-      const cap = a.rate * 2 * MAX_CRIES;
-      const g = Math.round(a.rate * moodMult(st.mood));
+      const cap = a.rate * 2 * MAX_CRIES, g = Math.round(a.rate * moodMult(st.mood));
       if (st.pending < cap) { st.pending = Math.min(cap, st.pending + g); earned += g; }
     }
     st.acc = t;
   }
-  if (earned > 0) setTimeout(() => toast(`Пока тебя не было, ферма накричала ${fmt(earned)} 🪙`), 600);
+  if (earned > 0) setTimeout(() => toast(`Пока тебя не было, ферма накричала ${fmt(earned)} 🪙. Собери у загонов!`), 600);
 })();
 
 /* ---------- quests ---------- */
@@ -207,147 +192,21 @@ const QPOOL = [
   { key:'feed',     text:n => `Покорми животных ${n} ${raz(n)}`, n:[3,5] },
   { key:'pet',      text:n => `Погладь животных ${n} ${raz(n)}`, n:[5,8] },
   { key:'chorus',   text:n => `Спой хором ${n} ${raz(n)}`,       n:[2,3], need: () => voicedIds().length >= 3 },
-  { key:'collect',  text:n => `Собери ${fmt(n)} монет`,       n:[0,0], dyn:true },
+  { key:'collect',  text:n => `Собери ${fmt(n)} монет`,          n:[0,0], dyn:true },
   { key:'record',   text:() => `Перезапиши голос любому животному`, n:[1,1] },
   { key:'allhappy', text:() => `Сделай всех довольными одновременно`, n:[1,1], need: () => Object.keys(S.owned).length >= 2 },
 ];
 function rollQuests(){
   S.day = today(); S.counters = {};
   const owned = Object.keys(S.owned).length;
-  const pool = QPOOL.filter(q => !q.need || q.need()).sort(() => Math.random() - .5).slice(0, 3);
-  S.quests = pool.map(q => {
-    let need = q.dyn ? Math.round(40 * Math.pow(2.6, owned - 1) / 10) * 10 : q.n[0] + Math.floor(Math.random() * (q.n[1] - q.n[0] + 1));
-    return { key: q.key, need, reward: Math.round(15 * Math.pow(2.3, owned - 1) / 5) * 5 + 10, claimed: false };
-  });
+  S.quests = QPOOL.filter(q => !q.need || q.need()).sort(() => Math.random() - .5).slice(0, 3).map(q => ({
+    key: q.key,
+    need: q.dyn ? Math.round(40 * Math.pow(2.6, owned - 1) / 10) * 10 : q.n[0] + Math.floor(Math.random() * (q.n[1] - q.n[0] + 1)),
+    reward: Math.round(15 * Math.pow(2.3, owned - 1) / 5) * 5 + 10, claimed: false }));
   save();
 }
 function bump(key, by = 1){ S.counters[key] = (S.counters[key] || 0) + by; }
-
-/* ---------- audio ---------- */
-let ac = null;
-const buffers = {};
-function ensureAC(){
-  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
-  if (ac && ac.state === 'suspended') ac.resume();
-  return ac;
-}
-function playBuffer(buf, rate, vol = 1, when = 0){
-  if (!ac || !buf) return;
-  const s = ac.createBufferSource(), g = ac.createGain();
-  s.buffer = buf; s.playbackRate.value = rate; g.gain.value = vol;
-  s.connect(g).connect(ac.destination); s.start(ac.currentTime + when);
-}
-function voiceRate(id){ const m = S.owned[id].mood; return BY[id].pitch * (m >= 70 ? 1.12 : m < 30 ? 0.78 : 1); }
-function playVoice(id, when = 0, vol = 1){ playBuffer(buffers[id], voiceRate(id), vol, when); }
-function ding(f = 880){
-  if (!ac) return;
-  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
-  o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .15);
-  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .17);
-}
-
-/* IndexedDB для голосов */
-function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('golosistyi-dvor', 1); r.onupgradeneeded = () => r.result.createObjectStore('voices'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function idbPut(k, v){ const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction('voices', 'readwrite'); tx.objectStore('voices').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
-async function idbGet(k){ const db = await idb(); return new Promise((res, rej) => { const r = db.transaction('voices').objectStore('voices').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function decode(blob){
-  ensureAC();
-  const ab = await blob.arrayBuffer();
-  return await new Promise((res, rej) => ac.decodeAudioData(ab, res, rej));
-}
-async function loadVoices(){
-  for (const id of voicedIds()) {
-    try {
-      const blob = await idbGet(id);
-      if (blob) buffers[id] = await decode(blob);
-      else { S.owned[id].voiced = false; }
-    } catch(e) { S.owned[id].voiced = false; }
-  }
-  save(); render();
-}
-
-/* ---------- UI ---------- */
-let toastT;
-function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
-function fly(el, text){
-  const r = el.getBoundingClientRect(), f = document.createElement('div');
-  f.className = 'fly'; f.textContent = text; f.style.left = (r.left + r.width/2 - 20) + 'px'; f.style.top = (r.top) + 'px';
-  document.body.appendChild(f); setTimeout(() => f.remove(), 950);
-}
-
-function render(){
-  const pens = $('pens'); pens.innerHTML = '';
-  const owned = ANIMALS.filter(a => S.owned[a.id]);
-  const locked = ANIMALS.filter(a => !S.owned[a.id]);
-  for (const a of owned) pens.appendChild(penEl(a, false));
-  if (locked[0]) pens.appendChild(penEl(locked[0], true));
-  if (locked.length > 1) { const m = document.createElement('div'); m.className = 'more'; m.textContent = `Впереди ещё животных: ${locked.length - 1}`; pens.appendChild(m); }
-  refresh();
-}
-
-function penEl(a, isLocked){
-  const el = document.createElement('article');
-  el.className = 'pen' + (isLocked ? ' locked' : ''); el.dataset.id = a.id;
-  const delay = -Math.random() * 14;
-  el.innerHTML = `
-    <div class="meadow">
-      ${[8,30,55,78].map(x => `<span class="tuft" style="left:${x}%"></span>`).join('')}
-      <div class="walker" style="animation-delay:${delay}s"><span class="bubble"></span><span class="hopper"><span class="emo" style="animation-delay:${delay}s">${a.emoji}</span></span></div>
-      ${isLocked ? '' : `<button class="gold small pending" hidden></button>`}
-      ${isLocked ? '' : `<div class="voiceme" hidden><button>🎤 Озвучь меня!</button></div>`}
-    </div>
-    <div class="penbody">
-      <div class="penhead"><b>${isLocked ? '???' : a.name}</b><span>${isLocked ? '' : `+${a.rate} 🪙 каждые ${a.every} с`}</span></div>
-      ${isLocked ? `<div class="actions"><button class="buy">Открыть за ${fmt(a.cost)} 🪙</button></div>` : `
-      <div class="mood"><span>Настроение</span><span class="track"><i></i></span><span class="lbl"></span></div>
-      <div class="actions">
-        <button class="green feed">Покормить ${fmt(a.feed)} 🪙</button>
-        <button class="ghost pet">Погладить</button>
-        <button class="ghost revoice" title="Перезаписать голос">🎤</button>
-      </div>`}
-    </div>`;
-  if (isLocked) {
-    el.querySelector('.buy').onclick = () => buy(a);
-  } else {
-    el.querySelector('.meadow').onclick = e => { if (e.target.closest('button')) return; pet(a, el); };
-    el.querySelector('.pet').onclick = () => pet(a, el);
-    el.querySelector('.feed').onclick = () => feed(a, el);
-    el.querySelector('.revoice').onclick = () => openRec(a);
-    el.querySelector('.voiceme button').onclick = () => openRec(a);
-    el.querySelector('.pending').onclick = e => { e.stopPropagation(); collect(a.id, true); };
-  }
-  return el;
-}
-
-function refresh(){
-  $('coins').textContent = '🪙 ' + fmt(S.coins);
-  let anyPending = false;
-  for (const el of document.querySelectorAll('.pen')) {
-    const a = BY[el.dataset.id], st = S.owned[a.id];
-    if (!st) { const b = el.querySelector('.buy'); if (b) b.disabled = S.coins < a.cost; continue; }
-    const [lbl, col, cls] = moodInfo(st.mood);
-    el.classList.toggle('happy', cls === 'happy'); el.classList.toggle('sad', cls === 'sad');
-    const bar = el.querySelector('.track i'); bar.style.width = st.mood + '%'; bar.style.background = col;
-    el.querySelector('.lbl').textContent = st.voiced ? `${lbl} ×${moodMult(st.mood)}` : 'Молчит';
-    el.querySelector('.voiceme').hidden = st.voiced;
-    const p = el.querySelector('.pending'); p.hidden = st.pending <= 0; p.textContent = '🪙 ' + fmt(st.pending);
-    if (st.pending > 0) anyPending = true;
-    el.querySelector('.feed').disabled = S.coins < a.feed || st.mood >= 98;
-    const left = PET_CD - (Date.now() - st.petAt) / 1000;
-    const petBtn = el.querySelector('.pet');
-    petBtn.textContent = left > 0 ? `Погладить ${Math.ceil(left)} с` : 'Погладить';
-    el.querySelector('.revoice').hidden = !st.voiced;
-  }
-  $('collectAll').disabled = !anyPending;
-  // chorus
-  const v = voicedIds().length, cb = $('chorusBtn'), ch = $('chorusHint');
-  const cd = CHORUS_CD - (Date.now() - S.chorusAt) / 1000;
-  if (v < 3) { cb.disabled = true; ch.textContent = `Озвучь 3 животных, чтобы открыть хор (${v}/3)`; }
-  else if (cd > 0) { cb.disabled = true; ch.textContent = `Голоса отдыхают: ${Math.ceil(cd)} с`; }
-  else { cb.disabled = false; ch.textContent = `Все ${v} споют твоими голосами. Настроение +10 каждому`; }
-  renderQuests();
-}
-
+function questsReady(){ return S.quests.filter(q => !q.claimed && (S.counters[q.key] || 0) >= q.need).length; }
 function renderQuests(){
   if (S.day !== today()) rollQuests();
   const box = $('quests'); box.innerHTML = '';
@@ -358,77 +217,450 @@ function renderQuests(){
     const txt = document.createElement('span'); txt.className = 'txt'; txt.textContent = def.text(q.need);
     const side = document.createElement('span'); side.className = 'side';
     if (q.claimed) side.textContent = 'Готово ✓';
-    else if (done) { const b = document.createElement('button'); b.className = 'gold small'; b.textContent = `Забрать +${fmt(q.reward)}`; b.onclick = () => { q.claimed = true; S.coins += q.reward; ding(1046); fly(b, '+' + fmt(q.reward)); save(); refresh(); }; side.appendChild(b); }
+    else if (done) { const b = document.createElement('button'); b.className = 'green'; b.textContent = `Забрать +${fmt(q.reward)}`;
+      b.onclick = () => { q.claimed = true; S.coins += q.reward; ding(1046); toast(`+${fmt(q.reward)} 🪙 за задание`); save(); renderQuests(); refreshHud(); }; side.appendChild(b); }
     else side.textContent = `${fmt(have)} / ${fmt(q.need)}`;
-    const bar = document.createElement('span'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${(have / q.need) * 100}%"></i>`;
+    const bar = document.createElement('span'); bar.className = 'bar'; bar.innerHTML = `<i style="width:${have / q.need * 100}%"></i>`;
     row.append(txt, side, bar); box.appendChild(row);
   }
   const ms = new Date(new Date().setHours(24,0,0,0)) - Date.now();
   $('questReset').textContent = `новые через ${Math.floor(ms/3600000)} ч ${Math.floor(ms/60000)%60} мин`;
 }
+$('questBtn').onclick = () => { $('questsPanel').hidden = !$('questsPanel').hidden; renderQuests(); };
 
-/* ---------- actions ---------- */
-function cry(id, sound){
-  const el = document.querySelector(`.pen[data-id="${id}"]`); if (!el) return;
-  const w = el.querySelector('.walker'), b = el.querySelector('.bubble');
-  w.classList.remove('hop'); void w.offsetWidth; w.classList.add('hop');
-  b.textContent = sound; b.classList.add('show'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('show'), 900);
+/* ---------- audio ---------- */
+let ac = null;
+const buffers = {};
+function ensureAC(){
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
 }
-function pet(a, el){
-  ensureAC();
-  const st = S.owned[a.id];
-  if (!st.voiced) { openRec(a); return; }
+function playBuffer(buf, rate, vol = 1, when = 0, pan = 0){
+  if (!ac || !buf) return;
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = buf; s.playbackRate.value = rate; g.gain.value = vol;
+  let node = s.connect(g);
+  if (ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); node = node.connect(p); }
+  node.connect(ac.destination); s.start(ac.currentTime + when);
+}
+function voiceRate(id){ const m = S.owned[id].mood; return BY[id].pitch * (m >= 70 ? 1.12 : m < 30 ? 0.78 : 1); }
+function playVoice(id, when = 0, vol = 1){
+  const i = ANIMALS.findIndex(a => a.id === id), pl = PLOTS[i];
+  const dx = pl.x + PW/2 - P.x, dist = Math.hypot(dx, pl.y + PH/2 - P.y);
+  playBuffer(buffers[id], voiceRate(id), vol * clamp(1.2 - dist/900, 0.25, 1), when, dx / 500);
+}
+function ding(f = 880){
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.1, t); g.gain.exponentialRampToValueAtTime(.001, t + .15);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .17);
+}
+function idb(){ return new Promise((res, rej) => { const r = indexedDB.open('golosistyi-dvor', 1); r.onupgradeneeded = () => r.result.createObjectStore('voices'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbPut(k, v){ const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction('voices', 'readwrite'); tx.objectStore('voices').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+async function idbGet(k){ const db = await idb(); return new Promise((res, rej) => { const r = db.transaction('voices').objectStore('voices').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function decode(blob){ ensureAC(); const ab = await blob.arrayBuffer(); return await new Promise((res, rej) => ac.decodeAudioData(ab, res, rej)); }
+async function loadVoices(){
+  for (const id of voicedIds()) {
+    try { const blob = await idbGet(id); if (blob) buffers[id] = await decode(blob); else S.owned[id].voiced = false; }
+    catch(e) { S.owned[id].voiced = false; }
+  }
+  save();
+}
+
+/* ---------- world objects ---------- */
+const P = { x: 800, y: 690, r: 14, dir: 1, walk: 0, moving: false };
+let moveTarget = null, pendingSpot = null;
+const keys = {};
+const anims = {};
+function animFor(i){
+  const a = ANIMALS[i];
+  if (!anims[a.id]) { const pl = PLOTS[i]; anims[a.id] = { x: pl.x + PW/2, y: pl.y + PH/2, tx: pl.x + PW/2, ty: pl.y + PH/2, dir: -1, wait: rand(0,2), bubble: '', bt: 0, hop: 0 }; }
+  return anims[a.id];
+}
+const pops = [];
+function pop(x, y, text, col = '#fff'){ pops.push({ x, y, text, col, life: 1 }); }
+function cry(id, text){ const an = anims[id]; if (!an) return; an.bubble = text; an.bt = 1.1; an.hop = .45; }
+
+// декор
+const DECOR = [];
+(function(){ let s = 7; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < 260; i++) DECOR.push({ x: r()*WORLD.w, y: r()*WORLD.h, k: r() < .12 ? 'flower' : 'tuft', c: ['#ffd84d','#ff8fb1','#ffffff','#b48cff'][Math.floor(r()*4)] });
+})();
+
+function blocked(x, y){
+  const r = P.r;
+  if (x < r || y < r || x > WORLD.w - r || y > WORLD.h - r) return true;
+  for (const pl of PLOTS) if (x > pl.x - r && x < pl.x + pl.w + r && y > pl.y - r && y < pl.y + pl.h + r) return true;
+  for (const t of TREES) if (Math.hypot(x - t.x, y - (t.y + 10)) < t.r * 0.55 + r) return true;
+  if (Math.hypot(x - STAGE.x, y - STAGE.y) < STAGE.r + r) return true;
+  const ex = (x - POND.x) / (POND.rx + r), ey = (y - POND.y) / (POND.ry + r);
+  if (ex*ex + ey*ey < 1) return true;
+  return false;
+}
+
+/* ---------- nearby & actions ---------- */
+function nearby(){
+  let best = null, bd = 70;
+  PLOTS.forEach((pl, i) => { const d = Math.hypot(P.x - pl.spot.x, P.y - pl.spot.y); if (d < bd) { bd = d; best = { type: 'plot', i }; } });
+  const d = Math.hypot(P.x - STAGE.spot.x, P.y - STAGE.spot.y);
+  if (d < bd) best = { type: 'stage' };
+  return best;
+}
+function nextLockedIndex(){ return ANIMALS.findIndex(a => !S.owned[a.id]); }
+
+function pet(a){
+  ensureAC(); const st = S.owned[a.id];
   playVoice(a.id); cry(a.id, '♥');
   if ((Date.now() - st.petAt) / 1000 >= PET_CD) { st.petAt = Date.now(); st.mood = Math.min(100, st.mood + 15); bump('pet'); save(); }
-  refresh();
+  else toast('Уже гладил, дай ей немного отдохнуть');
 }
-function feed(a, el){
-  ensureAC();
-  const st = S.owned[a.id];
-  if (S.coins < a.feed) return;
+function feed(a){
+  ensureAC(); const st = S.owned[a.id];
+  if (S.coins < a.feed || st.mood >= 98) return;
   S.coins -= a.feed; st.mood = Math.min(100, st.mood + 40); bump('feed');
-  if (st.voiced) playVoice(a.id); cry(a.id, '🌾 ням!'); ding(660);
-  save(); refresh();
+  if (st.voiced) playVoice(a.id); cry(a.id, '🌾 ням!'); ding(660); save();
 }
-function collect(id, sound){
-  const st = S.owned[id]; if (!st || st.pending <= 0) return 0;
-  const g = st.pending; S.coins += g; bump('collect', g); st.pending = 0;
-  if (sound) { ensureAC(); ding(988); const p = document.querySelector(`.pen[data-id="${id}"] .pending`); if (p) fly(p, '+' + fmt(g)); }
-  return g;
+function buy(i){
+  const a = ANIMALS[i]; if (S.coins < a.cost) return;
+  ensureAC(); S.coins -= a.cost; S.owned[a.id] = newAnimal(); animFor(i);
+  ding(784); setTimeout(() => ding(1175), 100); save(); toast(`${a.name} теперь на ферме!`); openRec(a);
 }
-$('collectAll').onclick = () => {
-  ensureAC(); let sum = 0; for (const id in S.owned) sum += collect(id, false);
-  if (sum) { ding(988); setTimeout(() => ding(1318), 80); fly($('coins'), '+' + fmt(sum)); }
-  save(); refresh();
-};
-function buy(a){
-  if (S.coins < a.cost) return;
+function chorus(){
   ensureAC();
-  S.coins -= a.cost; S.owned[a.id] = newAnimal(); ding(784); setTimeout(() => ding(1175), 100);
-  save(); render(); toast(`${a.name} теперь на ферме!`); openRec(a);
-}
-$('chorusBtn').onclick = () => {
-  ensureAC();
-  const ids = voicedIds(); if (ids.length < 3) return;
+  const ids = voicedIds();
+  if (ids.length < 3) { toast(`Хор откроется, когда озвучишь 3 животных (${ids.length}/3)`); return; }
+  if ((Date.now() - S.chorusAt) / 1000 < CHORUS_CD) return;
   S.chorusAt = Date.now();
-  ids.forEach((id, i) => { playVoice(id, i * 0.12, 0.8); setTimeout(() => cry(id, '♪♫'), i * 120); S.owned[id].mood = Math.min(100, S.owned[id].mood + 10); });
-  bump('chorus'); save(); refresh();
-};
+  ids.forEach((id, i) => { playVoice(id, i * 0.12, 0.85); setTimeout(() => cry(id, '♪♫'), i * 120); S.owned[id].mood = Math.min(100, S.owned[id].mood + 10); });
+  bump('chorus'); save();
+}
+$('chorusBtn').onclick = chorus;
+
+function primary(n){
+  if (!n) return;
+  if (n.type === 'stage') return chorus();
+  const a = ANIMALS[n.i], st = S.owned[a.id];
+  if (!st) { if (n.i === nextLockedIndex()) buy(n.i); return; }
+  if (!st.voiced) return openRec(a);
+  pet(a);
+}
+
+/* ---------- action panel ---------- */
+let actSig = '';
+function btn(label, key, cls, disabled, fn){
+  const b = document.createElement('button'); if (cls) b.className = cls; b.disabled = !!disabled;
+  b.innerHTML = label + (key ? `<kbd>${key}</kbd>` : ''); b.onclick = () => { fn(); actSig = ''; refreshHud(); };
+  return b;
+}
+function refreshAct(){
+  const n = nearby(), box = $('act');
+  if (!n) { box.hidden = true; actSig = ''; return; }
+  box.hidden = false;
+  let sig, build;
+  if (n.type === 'stage') {
+    const v = voicedIds().length, cd = Math.ceil(CHORUS_CD - (Date.now() - S.chorusAt) / 1000);
+    sig = `stage|${v}|${cd > 0 ? cd : 0}`;
+    build = () => {
+      $('actTitle').textContent = 'Сцена для хора'; $('actMood').hidden = true;
+      $('actSub').textContent = v < 3 ? `Озвучено ${v} из 3` : `Поют все озвученные: ${v}`;
+      $('actBtns').append(btn(cd > 0 ? `Голоса отдыхают ${cd} с` : '🎶 Спеть хором', 'E', '', v < 3 || cd > 0, chorus));
+    };
+  } else {
+    const a = ANIMALS[n.i], st = S.owned[a.id];
+    if (!st) {
+      const isNext = n.i === nextLockedIndex();
+      sig = `lock|${n.i}|${isNext}|${S.coins >= a.cost}`;
+      build = () => {
+        $('actTitle').textContent = isNext ? 'Пустой загон' : 'Закрытый загон'; $('actMood').hidden = true;
+        $('actSub').textContent = isNext ? 'Здесь поселится новое животное' : 'Сначала открой предыдущий загон';
+        if (isNext) $('actBtns').append(btn(`Открыть за ${fmt(a.cost)} 🪙`, 'E', 'green', S.coins < a.cost, () => buy(n.i)));
+      };
+    } else {
+      const petLeft = Math.ceil(PET_CD - (Date.now() - st.petAt) / 1000);
+      sig = `own|${n.i}|${st.voiced}|${petLeft > 0 ? petLeft : 0}|${S.coins >= a.feed}|${st.mood >= 98}`;
+      build = () => {
+        $('actTitle').textContent = a.name;
+        $('actSub').textContent = st.voiced ? `+${a.rate} 🪙 каждые ${a.every} с` : 'Пока молчит и не приносит монет';
+        $('actMood').hidden = false;
+        if (!st.voiced) $('actBtns').append(btn('🎤 Озвучить', 'E', '', false, () => openRec(a)));
+        else {
+          $('actBtns').append(
+            btn(petLeft > 0 ? `Погладить (${petLeft} с)` : 'Погладить ♥', 'E', '', false, () => pet(a)),
+            btn(`Покормить ${fmt(a.feed)} 🪙`, 'F', 'green', S.coins < a.feed || st.mood >= 98, () => feed(a)),
+            btn('🎤 Новый голос', 'R', 'paper', false, () => openRec(a)));
+        }
+      };
+    }
+  }
+  if (sig !== actSig) { actSig = sig; $('actBtns').innerHTML = ''; build(); }
+  if (n.type === 'plot') {
+    const st = S.owned[ANIMALS[n.i].id];
+    if (st) { const [lbl, col] = moodInfo(st.mood); $('actMoodBar').style.width = st.mood + '%'; $('actMoodBar').style.background = col; $('actMoodLbl').textContent = st.voiced ? `${lbl} ×${moodMult(st.mood)}` : '—'; }
+  }
+}
+
+function refreshHud(){
+  $('coins').textContent = '🪙 ' + fmt(S.coins);
+  const v = voicedIds().length, cd = Math.ceil(CHORUS_CD - (Date.now() - S.chorusAt) / 1000);
+  const cb = $('chorusBtn'); cb.disabled = v < 3 || cd > 0;
+  cb.innerHTML = (v < 3 ? `🎶 Хор ${v}/3` : cd > 0 ? `🎶 ${cd} с` : '🎶 Хор') + '<kbd>Q</kbd>';
+  const r = questsReady(); $('questBtn').textContent = r ? `Задания (${r}!)` : 'Задания';
+  refreshAct();
+  if (!$('questsPanel').hidden) renderQuests();
+}
+
+/* ---------- input ---------- */
+addEventListener('keydown', e => {
+  if (!$('rec').hidden) { if (e.code === 'Escape') closeRec(); return; }
+  keys[e.code] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if (e.repeat) return;
+  ensureAC();
+  const n = nearby();
+  if (e.code === 'KeyE' || e.code === 'Enter') primary(n);
+  else if (e.code === 'KeyF' && n && n.type === 'plot' && S.owned[ANIMALS[n.i].id]?.voiced) feed(ANIMALS[n.i]);
+  else if (e.code === 'KeyR' && n && n.type === 'plot' && S.owned[ANIMALS[n.i].id]) openRec(ANIMALS[n.i]);
+  else if (e.code === 'KeyQ') chorus();
+  else return;
+  actSig = ''; refreshHud();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+let cam = { x: 0, y: 0 }, W = 0, H = 0;
+cv.addEventListener('pointerdown', e => {
+  ensureAC();
+  const wx = e.clientX + cam.x, wy = e.clientY + cam.y;
+  let spot = null;
+  PLOTS.forEach(pl => { if (wx > pl.x - 10 && wx < pl.x + pl.w + 10 && wy > pl.y - 10 && wy < pl.y + pl.h + 10) spot = pl.spot; });
+  if (Math.hypot(wx - STAGE.x, wy - STAGE.y) < STAGE.r + 10) spot = STAGE.spot;
+  moveTarget = spot ? { ...spot } : { x: wx, y: wy };
+  hideHint();
+});
+let hintHidden = false;
+function hideHint(){ if (hintHidden) return; hintHidden = true; setTimeout(() => { $('hint').style.opacity = 0; setTimeout(() => $('hint').hidden = true, 500); }, 4000); }
+
+/* ---------- update ---------- */
+function update(dt){
+  // движение игрока
+  let mx = 0, my = 0;
+  if (keys.KeyA || keys.ArrowLeft) mx--;
+  if (keys.KeyD || keys.ArrowRight) mx++;
+  if (keys.KeyW || keys.ArrowUp) my--;
+  if (keys.KeyS || keys.ArrowDown) my++;
+  if (mx || my) { moveTarget = null; hideHint(); }
+  else if (moveTarget) {
+    const dx = moveTarget.x - P.x, dy = moveTarget.y - P.y, d = Math.hypot(dx, dy);
+    if (d < 4) moveTarget = null; else { mx = dx / d; my = dy / d; }
+  }
+  P.moving = false;
+  if (mx || my) {
+    const l = Math.hypot(mx, my); mx /= l; my /= l;
+    const sp = 230 * dt, ox = P.x, oy = P.y;
+    if (!blocked(P.x + mx * sp, P.y)) P.x += mx * sp;
+    if (!blocked(P.x, P.y + my * sp)) P.y += my * sp;
+    if (Math.abs(P.x - ox) + Math.abs(P.y - oy) < 0.01) moveTarget = null;
+    else { P.moving = true; P.walk += dt; if (mx) P.dir = mx < 0 ? -1 : 1; }
+  }
+  // сбор монет
+  ANIMALS.forEach((a, i) => {
+    const st = S.owned[a.id]; if (!st || st.pending <= 0) return;
+    const pl = PLOTS[i];
+    if (Math.hypot(P.x - pl.spot.x, P.y - pl.spot.y) < 32) {
+      const g = st.pending; S.coins += g; bump('collect', g); st.pending = 0;
+      pop(pl.spot.x, pl.spot.y - 30, '+' + fmt(g) + ' 🪙', '#ffe27a'); ding(988); setTimeout(() => ding(1318), 70); save();
+    }
+  });
+  // животные
+  ANIMALS.forEach((a, i) => {
+    const st = S.owned[a.id]; if (!st) return;
+    const an = animFor(i), pl = PLOTS[i];
+    const speed = st.mood >= 70 ? 42 : st.mood >= 30 ? 30 : 16;
+    an.wait -= dt;
+    if (an.wait <= 0) {
+      const dx = an.tx - an.x, dy = an.ty - an.y, d = Math.hypot(dx, dy);
+      if (d < 2) { an.wait = rand(0.8, 3); an.tx = rand(pl.x + 30, pl.x + pl.w - 30); an.ty = rand(pl.y + 40, pl.y + pl.h - 18); }
+      else { an.x += dx / d * speed * dt; an.y += dy / d * speed * dt; if (Math.abs(dx) > 1) an.dir = dx < 0 ? -1 : 1; }
+    }
+    an.bt = Math.max(0, an.bt - dt); an.hop = Math.max(0, an.hop - dt);
+    if (!st.voiced) return;
+    st.mood = Math.max(0, st.mood - DECAY * dt);
+    st.acc += dt;
+    if (st.acc >= a.every) {
+      st.acc -= a.every;
+      const cap = a.rate * 2 * MAX_CRIES;
+      if (st.pending < cap) { st.pending = Math.min(cap, st.pending + Math.round(a.rate * moodMult(st.mood))); cry(a.id, '🪙'); }
+      else cry(a.id, 'полно!');
+    }
+  });
+  const ids = Object.keys(S.owned);
+  if (ids.length >= 2 && ids.every(id => S.owned[id].voiced && S.owned[id].mood >= 70)) S.counters.allhappy = 1;
+  for (let i = pops.length - 1; i >= 0; i--) { pops[i].life -= dt * .8; pops[i].y -= 30 * dt; if (pops[i].life <= 0) pops.splice(i, 1); }
+}
+
+/* ---------- draw ---------- */
+function resize(){
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+
+const WOOD = '#a86a3d', WOOD_D = '#6f4424';
+function fence(pl, faded){
+  const { x, y, w, h, top } = pl, gate = 56, gx = x + w/2;
+  ctx.globalAlpha = faded ? .45 : 1;
+  ctx.strokeStyle = WOOD; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  const rail = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x1, y1 - 8); ctx.lineTo(x2, y2 - 8); ctx.stroke(); };
+  const gy = top ? y + h : y;
+  const oy = top ? y : y + h;
+  rail(x, oy, x + w, oy);
+  rail(x, y, x, y + h); rail(x + w, y, x + w, y + h);
+  rail(x, gy, gx - gate/2, gy); rail(gx + gate/2, gy, x + w, gy);
+  ctx.fillStyle = WOOD_D;
+  const post = (px, py) => { ctx.fillRect(px - 3, py - 14, 6, 16); };
+  for (let px = x; px <= x + w + 1; px += 26) { post(px, oy); if (Math.abs(px - gx) > gate/2) post(px, gy); }
+  for (let py = y; py <= y + h + 1; py += 26) { post(x, py); post(x + w, py); }
+  post(gx - gate/2, gy); post(gx + gate/2, gy);
+  ctx.globalAlpha = 1;
+}
+function drawTree(t){
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.beginPath(); ctx.ellipse(t.x, t.y + 14, t.r * .9, t.r * .35, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#7a4d2a'; ctx.fillRect(t.x - 5, t.y - 4, 10, 18);
+  ctx.fillStyle = '#3f8a3a'; ctx.beginPath(); ctx.arc(t.x, t.y - t.r * .6, t.r, 0, 7); ctx.fill();
+  ctx.fillStyle = '#56a84a'; ctx.beginPath(); ctx.arc(t.x - t.r * .3, t.y - t.r * .85, t.r * .55, 0, 7); ctx.fill();
+}
+function drawStage(){
+  const { x, y, r } = STAGE;
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.beginPath(); ctx.ellipse(x, y + 8, r + 4, r * .55, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#c98a55'; ctx.beginPath(); ctx.ellipse(x, y, r, r * .6, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = WOOD_D; ctx.lineWidth = 2;
+  for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 16, y - r * .55); ctx.lineTo(x + i * 16, y + r * .55); ctx.stroke(); }
+  const ready = voicedIds().length >= 3 && (Date.now() - S.chorusAt) / 1000 >= CHORUS_CD;
+  ctx.font = '800 22px Rubik, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = ready ? '#2d2417' : 'rgba(45,36,23,.45)';
+  ctx.fillText('♪ Хор ♪', x, y + 7 + (ready ? Math.sin(performance.now() / 250) * 2 : 0));
+}
+function drawPile(i){
+  const a = ANIMALS[i], st = S.owned[a.id]; if (!st || st.pending <= 0) return;
+  const { x, y } = PLOTS[i].spot, n = clamp(Math.ceil(st.pending / a.rate / 3), 1, 8);
+  for (let k = 0; k < n; k++) {
+    const cx = x + ((k % 3) - 1) * 9, cy = y - Math.floor(k / 3) * 6 + (k % 2) * 2;
+    ctx.fillStyle = '#c48c0c'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, 8, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f5c531'; ctx.beginPath(); ctx.ellipse(cx, cy, 8, 4, 0, 0, 7); ctx.fill();
+  }
+  ctx.font = '800 13px Rubik, system-ui'; ctx.textAlign = 'center';
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(45,36,23,.7)'; ctx.strokeText(fmt(st.pending), x, y - 20); ctx.fillStyle = '#ffe27a'; ctx.fillText(fmt(st.pending), x, y - 20);
+}
+function drawLabel(i){
+  const a = ANIMALS[i], st = S.owned[a.id], pl = PLOTS[i];
+  const lx = pl.x + pl.w/2, ly = pl.top ? pl.y - 22 : pl.y + pl.h + 32;
+  ctx.fillStyle = 'rgba(255,250,240,.92)';
+  const w = 120; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(lx - w/2, ly - 16, w, 30, 9) : ctx.rect(lx - w/2, ly - 16, w, 30); ctx.fill();
+  ctx.font = '800 13px Rubik, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#2d2417';
+  if (!st) {
+    const isNext = i === nextLockedIndex();
+    ctx.fillText(isNext ? `Открыть: ${fmt(a.cost)} 🪙` : 'Закрыто', lx, ly + 4);
+    return;
+  }
+  ctx.fillText(a.name, lx, ly - 1);
+  ctx.fillStyle = '#efe3cc'; ctx.fillRect(lx - 44, ly + 5, 88, 5);
+  ctx.fillStyle = st.voiced ? moodInfo(st.mood)[1] : '#c9bba0'; ctx.fillRect(lx - 44, ly + 5, 88 * st.mood / 100, 5);
+}
+function drawAnimal(i){
+  const a = ANIMALS[i], st = S.owned[a.id]; if (!st) return;
+  const an = anims[a.id]; if (!an) return;
+  const hop = an.hop > 0 ? Math.sin((an.hop / .45) * Math.PI) * 14 : 0;
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(an.x, an.y + 2, a.size * .42, a.size * .14, 0, 0, 7); ctx.fill();
+  ctx.save(); ctx.translate(an.x, an.y - hop);
+  if (an.dir > 0) ctx.scale(-1, 1);
+  ctx.globalAlpha = st.mood < 30 && st.voiced ? .8 : 1;
+  ctx.font = `${a.size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText(a.emoji, 0, 4);
+  ctx.restore(); ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+  const text = an.bt > 0 ? an.bubble : !st.voiced ? '🎤?' : st.mood < 30 ? '…' : '';
+  if (text) {
+    ctx.font = '800 13px Rubik, system-ui'; const tw = ctx.measureText(text).width + 14, bx = an.x, by = an.y - a.size - 10 - hop;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx - tw/2, by - 16, tw, 22, 10) : ctx.rect(bx - tw/2, by - 16, tw, 22); ctx.fill();
+    ctx.fillStyle = '#2d2417'; ctx.textAlign = 'center'; ctx.fillText(text, bx, by);
+  }
+}
+function drawPlayer(){
+  const { x, y } = P, t = P.walk * 11, bob = P.moving ? Math.abs(Math.sin(t)) * 2.5 : 0;
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 13, 5, 0, 0, 7); ctx.fill();
+  const leg = P.moving ? Math.sin(t) * 4 : 0;
+  ctx.fillStyle = '#5a3a22'; ctx.fillRect(x - 7, y - 8 + leg * .5, 5, 9); ctx.fillRect(x + 2, y - 8 - leg * .5, 5, 9);
+  ctx.fillStyle = '#3d6fd1'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - 10, y - 26 - bob, 20, 20, 6) : ctx.rect(x - 10, y - 26 - bob, 20, 20); ctx.fill();
+  ctx.fillStyle = '#e8563a'; ctx.fillRect(x - 10, y - 26 - bob, 20, 6);
+  ctx.fillStyle = '#f2c79b'; ctx.beginPath(); ctx.arc(x + P.dir * 13, y - 16 - bob + leg * .4, 4, 0, 7); ctx.arc(x - P.dir * 12, y - 16 - bob - leg * .4, 4, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y - 35 - bob, 10, 0, 7); ctx.fill();
+  ctx.fillStyle = '#2d2417'; ctx.beginPath(); ctx.arc(x + P.dir * 4, y - 36 - bob, 1.6, 0, 7); ctx.fill();
+  ctx.fillStyle = '#e9c46a'; ctx.beginPath(); ctx.ellipse(x, y - 42 - bob, 16, 5, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y - 46 - bob, 9, 6, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#d9463b'; ctx.fillRect(x - 9, y - 45 - bob, 18, 3);
+}
+
+function draw(){
+  cam.x = W >= WORLD.w ? (WORLD.w - W) / 2 : clamp(P.x - W/2, 0, WORLD.w - W);
+  cam.y = H >= WORLD.h ? (WORLD.h - H) / 2 : clamp(P.y - H/2, 0, WORLD.h - H);
+  ctx.fillStyle = '#4f8a2f'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
+  // трава
+  ctx.fillStyle = '#86c95a'; ctx.fillRect(0, 0, WORLD.w, WORLD.h);
+  for (const d of DECOR) {
+    if (d.k === 'tuft') { ctx.fillStyle = '#6fb447'; ctx.fillRect(d.x, d.y, 3, 6); ctx.fillRect(d.x + 4, d.y + 1, 3, 5); }
+    else { ctx.fillStyle = d.c; ctx.beginPath(); ctx.arc(d.x, d.y, 3, 0, 7); ctx.fill(); }
+  }
+  // дорожки
+  ctx.fillStyle = '#d8b77e';
+  ctx.fillRect(120, 525, 1360, 60);
+  PLOTS.forEach(pl => { const x = pl.x + PW/2 - 26; if (pl.top) ctx.fillRect(x, pl.y + PH, 52, 525 - (pl.y + PH)); else ctx.fillRect(x, 585, 52, pl.y - 585); });
+  ctx.fillRect(STAGE.x - 70, 525, 140, 110);
+  // пруд
+  ctx.fillStyle = '#5bb4e0'; ctx.beginPath(); ctx.ellipse(POND.x, POND.y, POND.rx, POND.ry, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
+  const tt = performance.now() / 900;
+  for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(POND.x - 30 + k * 30, POND.y - 10 + k * 12, 14 + Math.sin(tt + k) * 3, 4, 0, 0, 7); ctx.stroke(); }
+  // загоны
+  PLOTS.forEach((pl, i) => {
+    const owned = !!S.owned[ANIMALS[i].id];
+    ctx.fillStyle = owned ? '#9bd46a' : 'rgba(0,0,0,.06)'; ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+    fence(pl, !owned);
+  });
+  PLOTS.forEach((pl, i) => drawPile(i));
+  // объекты по глубине
+  const list = [];
+  ANIMALS.forEach((a, i) => { if (S.owned[a.id] && anims[a.id]) list.push({ y: anims[a.id].y, f: () => drawAnimal(i) }); });
+  TREES.forEach(t => list.push({ y: t.y + 14, f: () => drawTree(t) }));
+  list.push({ y: STAGE.y, f: drawStage });
+  list.push({ y: P.y, f: drawPlayer });
+  list.sort((a, b) => a.y - b.y).forEach(o => o.f());
+  PLOTS.forEach((pl, i) => drawLabel(i));
+  // цель клика
+  if (moveTarget) { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(moveTarget.x, moveTarget.y, 10, 5, 0, 0, 7); ctx.stroke(); }
+  // всплывающий текст
+  ctx.font = '900 18px Rubik, system-ui'; ctx.textAlign = 'center';
+  for (const p of pops) { ctx.globalAlpha = clamp(p.life * 1.5, 0, 1); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(45,36,23,.7)'; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.text, p.x, p.y); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
 
 /* ---------- recording ---------- */
 let recAnimal = null, draftBlob = null, draftBuf = null, mediaRec = null, recTimer = null;
 function openRec(a){
-  ensureAC();
-  recAnimal = a; draftBlob = null; draftBuf = null;
+  ensureAC(); recAnimal = a; draftBlob = null; draftBuf = null;
+  const voiced = S.owned[a.id].voiced;
   $('recEmoji').textContent = a.emoji;
-  $('recTitle').textContent = (S.owned[a.id].voiced ? 'Перезаписать голос: ' : 'Озвучь ') + (S.owned[a.id].voiced ? a.name.toLowerCase() : a.acc);
-  $('recPlay').hidden = true; $('recSave').hidden = true;
+  $('recTitle').textContent = voiced ? `Новый голос: ${a.name.toLowerCase()}` : `Озвучь ${a.acc}`;
+  $('recPlay').hidden = true; $('recSave').hidden = true; $('micNote').hidden = true; $('recBtn').disabled = false;
   $('recBtn').textContent = '● Записать'; $('recBtn').classList.remove('rec-on');
+  for (const k in keys) keys[k] = false;
   $('rec').hidden = false;
 }
 function closeRec(){ stopRec(); $('rec').hidden = true; recAnimal = null; }
-$('recClose').onclick = closeRec;
 function stopRec(){ clearTimeout(recTimer); if (mediaRec && mediaRec.state === 'recording') mediaRec.stop(); }
+$('recClose').onclick = closeRec;
 $('recBtn').onclick = async () => {
   ensureAC();
   if (mediaRec && mediaRec.state === 'recording') { stopRec(); return; }
@@ -436,9 +668,7 @@ $('recBtn').onclick = async () => {
   try {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('no');
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch(e) {
-    $('micNote').hidden = false; $('recBtn').disabled = true; return;
-  }
+  } catch(e) { $('micNote').hidden = false; return; }
   const chunks = [];
   mediaRec = new MediaRecorder(stream);
   mediaRec.ondataavailable = e => e.data.size && chunks.push(e.data);
@@ -458,50 +688,41 @@ $('recFile').onchange = async e => {
   await setDraft(f);
 };
 async function setDraft(blob){
-  try {
-    draftBuf = await decode(blob); draftBlob = blob;
-    $('recPlay').hidden = false; $('recSave').hidden = false;
-    playBuffer(draftBuf, recAnimal.pitch);
-  } catch(e) { toast('Не получилось прочитать звук. Попробуй другой файл.'); }
+  try { draftBuf = await decode(blob); draftBlob = blob; $('recPlay').hidden = false; $('recSave').hidden = false; playBuffer(draftBuf, recAnimal.pitch); }
+  catch(e) { toast('Не получилось прочитать звук. Попробуй ещё раз.'); }
 }
 $('recPlay').onclick = () => { ensureAC(); if (draftBuf) playBuffer(draftBuf, recAnimal.pitch); };
 $('recSave').onclick = async () => {
   if (!draftBuf || !recAnimal) return;
-  const a = recAnimal, st = S.owned[a.id], wasVoiced = st.voiced;
+  const a = recAnimal, st = S.owned[a.id], was = st.voiced;
   buffers[a.id] = draftBuf; st.voiced = true;
   try { await idbPut(a.id, draftBlob); } catch(e) { toast('Голос сохранён только до перезагрузки страницы'); }
-  if (wasVoiced) bump('record');
-  closeRec(); save(); refresh();
+  if (was) bump('record');
+  closeRec(); save(); actSig = ''; refreshHud();
   playVoice(a.id); cry(a.id, '!!!');
-  if (!wasVoiced) toast(`${a.name} заговорила твоим голосом и начала приносить монеты`);
+  if (!was) toast(`${a.name} заговорила твоим голосом и начала приносить монеты`);
 };
 
+/* ---------- misc ---------- */
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+
 /* ---------- loop ---------- */
-let lastTick = performance.now(), saveAcc = 0;
-setInterval(() => {
-  const now = performance.now(), dt = Math.min(2, (now - lastTick) / 1000); lastTick = now;
-  for (const id in S.owned) {
-    const st = S.owned[id], a = BY[id];
-    if (!st.voiced) continue;
-    st.mood = Math.max(0, st.mood - DECAY * dt);
-    st.acc += dt;
-    if (st.acc >= a.every) {
-      st.acc -= a.every;
-      const cap = a.rate * 2 * MAX_CRIES;
-      if (st.pending < cap) { st.pending = Math.min(cap, st.pending + Math.round(a.rate * moodMult(st.mood))); cry(id, '🪙'); }
-      else cry(id, 'полно!');
-    }
-  }
-  const ids = Object.keys(S.owned);
-  if (ids.length >= 2 && ids.every(id => S.owned[id].voiced && S.owned[id].mood >= 70)) S.counters.allhappy = 1;
+let last = performance.now(), hudAcc = 0, saveAcc = 0;
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); draw();
+  hudAcc += dt; if (hudAcc > 0.2) { hudAcc = 0; refreshHud(); }
   saveAcc += dt; if (saveAcc > 3) { saveAcc = 0; save(); }
-  refresh();
-}, 250);
+  requestAnimationFrame(frame);
+}
 addEventListener('pagehide', save);
-document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); last = performance.now(); });
 
 if (S.day !== today() || !S.quests.length) rollQuests();
-render();
+ANIMALS.forEach((a, i) => { if (S.owned[a.id]) animFor(i); });
+resize(); refreshHud();
+requestAnimationFrame(frame);
 loadVoices();
 })();
 </script>
